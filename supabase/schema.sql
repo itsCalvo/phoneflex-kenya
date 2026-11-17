@@ -268,3 +268,18 @@ with check(bucket_id='phone-images' and public.phoneflex_is_admin());
 drop policy if exists phone_images_admin_delete on storage.objects;
 create policy phone_images_admin_delete on storage.objects for delete to authenticated
 using(bucket_id='phone-images' and public.phoneflex_is_admin());
+
+
+-- Table privileges are separate from RLS policies. Grant only the operations
+-- required by the application; RLS above remains responsible for row access.
+grant select on table public.profiles to authenticated;
+
+grant select on table public.brands, public.phones, public.listings,
+ public.finance_providers, public.finance_offers to anon, authenticated;
+
+grant select, insert, update, delete on table
+ public.brands, public.phones, public.sellers, public.seller_members,
+ public.listings, public.finance_providers, public.finance_offers, public.leads
+ to authenticated;
+
+grant insert on table public.leads to anon;
