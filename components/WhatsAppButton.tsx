@@ -1,0 +1,2 @@
+import { MessageCircle } from 'lucide-react';
+export default function WhatsAppButton({phone,message,label='Continue on WhatsApp'}:{phone?:string|null;message:string;label?:string}){const number=(phone||process.env.NEXT_PUBLIC_WHATSAPP_NUMBER||'').replace(/\D/g,'');const href=number?`https://wa.me/${number}?text=${encodeURIComponent(message)}`:`https://wa.me/?text=${encodeURIComponent(message)}`;return <a className="btn btn-whatsapp" href={href} target="_blank" rel="noopener noreferrer"><MessageCircle size={18}/>{label}</a>}
