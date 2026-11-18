@@ -16,16 +16,25 @@ export async function getProducts():Promise<ProductWithListings[]>{
  ]);
  if(phonesRes.error){console.error('Phone catalogue query failed:',phonesRes.error.message);return [];}
  const sellers=new Map<string,any>((sellersRes.data||[]).map((s:any)=>[s.id,s]));
- const listings=(listingsRes.data||[]).map((l:any)=>({...l,cash_price:Number(l.cash_price_kes),warranty:l.warranty_months?`${l.warranty_months} months`:null,seller:(sellers.get(l.seller_id) ? { ...sellers.get(l.seller_id), business_name:(sellers.get(l.seller_id) as any).name, location:[(sellers.get(l.seller_id) as any).town,(sellers.get(l.seller_id) as any).county].filter(Boolean).join(', '), verified:true } : undefined)}));
- const offers=(offersRes.data||[]).map((o:any)=>({id:o.id,provider_id:o.provider_id,phone_id:o.phone_id,listing_id:o.listing_id,deposit_amount:Number(o.deposit_kes),installment_amount:Number(o.instalment_amount_kes),installment_frequency:o.instalment_frequency,term_count:o.instalment_count,total_payable:Number(o.total_payable_kes),fees:Number(o.fees_kes),active:o.is_active,provider:o.finance_providers?{...o.finance_providers,contact_phone:o.finance_providers.whatsapp_number||o.finance_providers.contact_phone}:undefined}));
- return (phonesRes.data||[]).map((row:any)=>({
-  id:row.id,slug:row.slug,name:row.name,brand:row.brands?.name||'Other',model:row.model,image_url:row.image_url,
-  cash_price:null,ram_gb:row.ram_gb,storage_gb:row.storage_gb,display_size:row.screen_inches?`${row.screen_inches} inch`:null,
-  battery_mah:row.battery_mah,network:(row.network||[]).join(' / '),condition:row.condition_type,
-  description:row.description,featured:false,active:row.is_published,
-  listings:listings.filter((l:any)=>l.phone_id===row.id),
-  finance_offers:offers.filter((o:any)=>o.phone_id===null||o.phone_id===row.id||listings.some((l:any)=>l.phone_id===row.id&&l.id===o.listing_id))
- })) as ProductWithListings[];
+ const listings=(listingsRes.data||[]).map((l:any)=>({...l,cash_price:Number(l.cash_price_kes),cash_enabled:l.cash_enabled!==false,financing_enabled:l.financing_enabled!==false,warranty:l.warranty_months?String(l.warranty_months)+' months':null,seller:(sellers.get(l.seller_id)?{...sellers.get(l.seller_id),business_name:sellers.get(l.seller_id).name,location:[sellers.get(l.seller_id).town,sellers.get(l.seller_id).county].filter(Boolean).join(', '),verified:true}:undefined)}));
+ const now=Date.now();
+ const offers=(offersRes.data||[]).filter((o:any)=>{
+  const provider=o.finance_providers;
+  if(!provider||!provider.is_active)return false;
+  if(o.valid_from&&new Date(o.valid_from).getTime()>now)return false;
+  if(o.valid_until&&new Date(o.valid_until).getTime()<=now)return false;
+  return true;
+ }).map((o:any)=>({id:o.id,provider_id:o.provider_id,phone_id:o.phone_id,listing_id:o.listing_id,deposit_amount:Number(o.deposit_kes),installment_amount:Number(o.instalment_amount_kes),installment_frequency:o.instalment_frequency,term_count:o.instalment_count,total_payable:Number(o.total_payable_kes),fees:Number(o.fees_kes),active:o.is_active,provider:o.finance_providers?{...o.finance_providers,contact_phone:o.finance_providers.whatsapp_number||o.finance_providers.contact_phone}:undefined}));
+ return (phonesRes.data||[]).map((row:any)=>{
+  const phoneListings=listings.filter((l:any)=>l.phone_id===row.id);
+  const financeListings=phoneListings.filter((l:any)=>l.financing_enabled);
+  const visibleOffers=offers.filter((o:any)=>{
+   if(o.listing_id)return financeListings.some((l:any)=>l.id===o.listing_id);
+   if(o.phone_id)return o.phone_id===row.id&&financeListings.length>0;
+   return financeListings.length>0;
+  });
+  return {id:row.id,slug:row.slug,name:row.name,brand:row.brands?.name||'Other',model:row.model,image_url:row.image_url,cash_price:null,ram_gb:row.ram_gb,storage_gb:row.storage_gb,display_size:row.screen_inches?String(row.screen_inches)+' inch':null,battery_mah:row.battery_mah,network:(row.network||[]).join(' / '),condition:row.condition_type,description:row.description,featured:false,active:row.is_published,listings:phoneListings,finance_offers:visibleOffers};
+ }) as ProductWithListings[];
 }
 export async function getProduct(slug:string):Promise<ProductWithListings|undefined>{return (await getProducts()).find(p=>p.slug===slug);}
 export {money};
