@@ -67,7 +67,7 @@ Required columns: `name,brand,slug`.
 
 Optional columns: `model,category,ram_gb,storage_gb,screen_inches,battery_mah,network,condition_type,image_url,description,is_published`.
 
-`category` accepts `smartphone`, `feature_phone`, `foldable`, `gaming`, `rugged` or `tablet`. The Kenya starter catalogue seeds common brands and representative models as unpublished drafts; confirm variants, specs and seller stock before publishing. The financing admin suggests a 10% deposit based on the lowest current seller cash listing for the selected phone; verify the amount and provider terms before activating an offer. `network` accepts values such as `4G`, `5G`, or `4G / 5G`. Import creates/updates phone model records and brands. Seller prices, stock and financing offers are managed separately.
+`category` accepts `smartphone`, `feature_phone`, `foldable`, `gaming`, `rugged` or `tablet`. The Kenya starter catalogue seeds 188 representative phone/tablet models across 30 brands. These model records are published in the catalogue; this does not mean they are in stock or purchasable. Confirm variants/specifications and add a verified seller listing with current price and stock before treating a model as available. The financing admin suggests a 10% deposit based on the lowest current seller cash listing for the selected phone; verify the amount and provider terms before activating an offer. `network` accepts values such as `4G`, `5G`, or `4G / 5G`. Import creates/updates phone model records and brands. Seller prices, stock and financing offers are managed separately.
 
 ## WhatsApp and lead capture
 
