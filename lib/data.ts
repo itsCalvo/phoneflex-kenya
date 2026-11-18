@@ -33,7 +33,7 @@ export async function getProducts():Promise<ProductWithListings[]>{
    if(o.phone_id)return o.phone_id===row.id&&financeListings.length>0;
    return financeListings.length>0;
   });
-  return {id:row.id,slug:row.slug,name:row.name,brand:row.brands?.name||'Other',model:row.model,category:row.category||'smartphone',image_url:row.image_url,cash_price:null,ram_gb:row.ram_gb,storage_gb:row.storage_gb,display_size:row.screen_inches?String(row.screen_inches)+' inch':null,battery_mah:row.battery_mah,network:(row.network||[]).join(' / '),condition:row.condition_type,description:row.description,featured:false,active:row.is_published,listings:phoneListings,finance_offers:visibleOffers};
+  return {id:row.id,slug:row.slug,name:row.name,brand:row.brands?.name||'Other',model:row.model,category:row.category||'smartphone',image_url:row.image_url||(row.images||[])[0]||null,images:Array.from(new Set([...(row.images||[]),...(row.image_url?[row.image_url]:[])])),cash_price:null,ram_gb:row.ram_gb,storage_gb:row.storage_gb,display_size:row.screen_inches?String(row.screen_inches)+' inch':null,battery_mah:row.battery_mah,network:(row.network||[]).join(' / '),condition:row.condition_type,description:row.description,featured:false,active:row.is_published,listings:phoneListings,finance_offers:visibleOffers};
  }) as ProductWithListings[];
 }
 export async function getProduct(slug:string):Promise<ProductWithListings|undefined>{return (await getProducts()).find(p=>p.slug===slug);}
