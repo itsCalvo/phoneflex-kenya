@@ -26,7 +26,7 @@ create table if not exists public.brands (
 create table if not exists public.phones (
  id uuid primary key default gen_random_uuid(),
  brand_id uuid not null references public.brands(id) on delete restrict,
- name text not null, model text, slug text not null unique, description text,
+ name text not null, model text, slug text not null unique, category text not null default 'smartphone' check(category in ('smartphone','feature_phone','foldable','gaming','rugged','tablet')), description text,
  image_url text, images text[] not null default '{}',
  ram_gb integer check(ram_gb is null or ram_gb>0),
  storage_gb integer check(storage_gb is null or storage_gb>0),
