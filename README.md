@@ -48,15 +48,15 @@ The current application code is aligned to these normalized table and column nam
    where id = 'PASTE_AUTH_USER_UUID_HERE';
    ```
 
-4. Sign in at http://localhost:3000/admin/login.
+4. Sign in at http://localhost:3000/admin/login. If an administrator is already signed in, the login page redirects to the workspace. Use Log out in the admin sidebar to end the current session.
 
 New accounts default to the `customer` role. Only a profile explicitly promoted to `admin` can enter the admin workspace.
 
 ## Admin workflows
 
 - Products: create phone models, import CSV, publish/unpublish catalogue entries.
-- Sellers: add retailers, verify them, create seller-specific prices, stock and warranty.
-- Financing: register providers and save offers as inactive drafts pending verification.
+- Sellers: add retailers, verify them, create seller-specific prices, stock and warranty. Each listing has independent Cash and Financing switches; at least one must remain enabled.
+- Financing: register providers and save offers as inactive drafts pending verification. An offer is only shown where the seller listing has Financing enabled and the provider/offer is active and in date.
 - Leads: review enquiries, update status and export CSV.
 
 A phone model is not purchasable just because it exists in the catalogue. It needs a published phone record plus an active listing from a verified, active seller with available stock.

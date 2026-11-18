@@ -62,6 +62,9 @@ create table if not exists public.listings (
  phone_id uuid not null references public.phones(id) on delete restrict,
  seller_id uuid not null references public.sellers(id) on delete cascade,
  cash_price_kes numeric(12,2) not null check(cash_price_kes>=0),
+ cash_enabled boolean not null default true,
+ financing_enabled boolean not null default true,
+
  currency text not null default 'KES' check(currency='KES'),
  stock_quantity integer not null default 0 check(stock_quantity>=0),
  stock_status text not null default 'out_of_stock'
@@ -72,7 +75,8 @@ create table if not exists public.listings (
  check(listing_status in ('draft','active','paused','rejected','sold_out')),
  product_url text, last_price_verified_at timestamptz,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
- unique(phone_id,seller_id)
+ unique(phone_id,seller_id),
+ check(cash_enabled or financing_enabled)
 );
 
 create table if not exists public.finance_providers (
@@ -268,3 +272,15 @@ with check(bucket_id='phone-images' and public.phoneflex_is_admin());
 drop policy if exists phone_images_admin_delete on storage.objects;
 create policy phone_images_admin_delete on storage.objects for delete to authenticated
 using(bucket_id='phone-images' and public.phoneflex_is_admin());
+
+-- Existing deployments: add per-listing payment availability controls.
+-- Defaults preserve both methods for existing seller listings.
+alter table public.listings
+  add column if not exists cash_enabled boolean not null default true,
+  add column if not exists financing_enabled boolean not null default true;
+
+alter table public.listings
+  drop constraint if exists listings_at_least_one_payment_method;
+alter table public.listings
+  add constraint listings_at_least_one_payment_method
+  check (cash_enabled or financing_enabled);
