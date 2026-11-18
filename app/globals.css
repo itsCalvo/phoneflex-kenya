@@ -17,3 +17,6 @@
 .listing-payment-row{gap:16px}
 .listing-payment-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 @media(max-width:640px){.listing-payment-row{align-items:flex-start;flex-direction:column}.listing-payment-actions{width:100%}}
+
+.catalogue-featured{padding-top:58px;padding-bottom:64px}.catalogue-more{display:flex;justify-content:center;margin-top:30px}.catalogue-more .btn{min-width:170px}.catalogue-featured .catalogue-heading{margin-top:0}
+@media(max-width:650px){.catalogue-featured{padding-top:42px;padding-bottom:48px}.catalogue-more{margin-top:22px}}
