@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies, headers } from 'next/headers';
 export async function POST(request:Request){
  try{
   const body=await request.json();if(!['admin','seller'].includes(body.role))return NextResponse.json({error:'Invalid role'},{status:400});
   const cookieStore=await cookies();const headerStore=await headers();
-  const supabase=createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{cookies:{getAll:()=>cookieStore.getAll(),setAll:(items)=>items.forEach(({name,value,options})=>cookieStore.set(name,value,options))}});
+  const supabase=createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{cookies:{getAll:()=>cookieStore.getAll(),setAll:(items: { name:string; value:string; options:CookieOptions }[])=>items.forEach(({name,value,options})=>cookieStore.set(name,value,options))}});
   const {data:{user},error:authError}=await supabase.auth.getUser();if(authError||!user)return NextResponse.json({error:'Authentication required'},{status:401});
   const {data:profile}=await supabase.from('profiles').select('role').eq('id',user.id).maybeSingle();if(profile?.role!==body.role)return NextResponse.json({error:'Role mismatch'},{status:403});
   const clean=(v:unknown,max=80)=>typeof v==='string'?v.slice(0,max):null;
