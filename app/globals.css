@@ -91,3 +91,43 @@
 @media(max-width:850px){.merchant-shell{grid-template-columns:1fr}.merchant-sidebar{padding:13px 18px;display:grid;grid-template-columns:1fr auto auto;align-items:center}.merchant-sidebar .brand{padding:0}.merchant-profile{display:none}.merchant-logout{margin:0;border:0;padding:10px}.merchant-main{padding:27px 20px}.merchant-editor{grid-template-columns:1fr}.merchant-savebar{grid-column:1}.public-store .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.merchant-listing-form{grid-template-columns:repeat(2,1fr)}.merchant-listing-form .btn{width:100%}.merchant-listing-row{align-items:flex-start;flex-direction:column}.merchant-listing-actions{width:100%;flex-wrap:wrap}}
 @media(max-width:560px){.merchant-top{align-items:flex-start;flex-direction:column}.merchant-top h1{font-size:25px}.merchant-main{padding:22px 13px}.merchant-card{padding:16px}.merchant-preview{min-height:160px}.merchant-preview-copy h3{font-size:16px}.public-store-header{padding:0 16px}.public-store-hero{min-height:330px;padding:35px 20px}.public-store-body{padding:35px 16px 55px}.public-store-heading{align-items:flex-start;flex-direction:column}.public-store .product-grid{gap:10px}}
+
+
+/* Animated featured-phone hero */
+.hero-visual-showcase{height:470px;min-width:0;display:flex;align-items:center;justify-content:center;overflow:visible}
+.phone-motion-stage{position:relative;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;overflow:hidden;isolation:isolate}
+.showcase-glow{position:absolute;width:360px;height:360px;left:50%;top:48%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#a8e87542 0%,#8ddc7620 42%,transparent 72%);filter:blur(18px);z-index:-2;animation:showcasePulse 5s ease-in-out infinite}
+.showcase-orbit{position:absolute;left:50%;top:49%;border:1px solid #d7f2df22;border-radius:50%;pointer-events:none;z-index:-1}
+.showcase-orbit-a{width:490px;height:250px;transform:translate(-50%,-50%) rotate(-24deg);animation:orbitDrift 18s linear infinite}
+.showcase-orbit-b{width:390px;height:330px;transform:translate(-50%,-50%) rotate(36deg);animation:orbitDrift 24s linear infinite reverse}
+.showcase-heading{position:relative;z-index:2;align-self:center;display:flex;align-items:center;gap:9px;margin:5px 0 20px;padding:8px 13px;border:1px solid #ffffff2b;border-radius:30px;background:#ffffff0d;color:#e1f1e5;font-size:9px;font-weight:800;letter-spacing:1.5px;backdrop-filter:blur(12px)}
+.showcase-live-dot{width:7px;height:7px;border-radius:50%;background:#d8f36a;box-shadow:0 0 0 4px #d8f36a25}
+.phone-marquee{width:100%;overflow:hidden;padding:12px 0 20px;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.phone-marquee-track{width:max-content;display:flex;align-items:center;gap:18px;animation:phoneMarquee 36s linear infinite;will-change:transform}
+.phone-motion-stage:hover .phone-marquee-track,.phone-motion-stage:focus-within .phone-marquee-track{animation-play-state:paused}
+.motion-phone-card{width:178px;flex:0 0 178px;overflow:hidden;border:1px solid #ffffff35;border-radius:18px;background:linear-gradient(155deg,#ffffffed,#eaf2e9f2);color:#17271e;box-shadow:0 20px 55px #0004;transform:translateY(10px) rotate(-4deg);transition:transform .35s ease,box-shadow .35s ease;backdrop-filter:blur(10px)}
+.motion-phone-card-1{transform:translateY(-12px) rotate(3deg)}
+.motion-phone-card-2{transform:translateY(7px) rotate(5deg)}
+.motion-phone-card-3{transform:translateY(-7px) rotate(-2deg)}
+.motion-phone-card:hover,.motion-phone-card:focus-visible{transform:translateY(-13px) rotate(0) scale(1.04);box-shadow:0 28px 65px #0006;outline:2px solid #d8f36a;outline-offset:3px}
+.motion-phone-image{height:205px;position:relative;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#dcebdd,#edf3ec 68%,#e5eee6)}
+.motion-phone-image:after{content:"";position:absolute;inset:0;background:linear-gradient(130deg,#fff6,transparent 38%,#1b4b2c0b);pointer-events:none}
+.motion-phone-image img{width:100%;height:100%;padding:13px;object-fit:contain;mix-blend-mode:multiply;transition:transform .45s ease}
+.motion-phone-card:hover .motion-phone-image img{transform:scale(1.09) rotate(-2deg)}
+.motion-stock{position:absolute;left:9px;top:9px;z-index:1;display:flex;align-items:center;gap:5px;border:1px solid #dce6dc;background:#ffffffed;border-radius:20px;padding:5px 8px;color:#647268;font-size:8px;font-weight:800}
+.motion-stock i{width:6px;height:6px;border-radius:50%;background:#9aa69c}
+.motion-stock-live{color:#236a45}.motion-stock-live i{background:#28a568;box-shadow:0 0 0 3px #28a56820}
+.motion-phone-meta{padding:12px 13px 13px;display:flex;flex-direction:column;gap:4px}
+.motion-phone-meta small{font-size:8px;font-weight:800;letter-spacing:1.2px;color:#718277;text-transform:uppercase}
+.motion-phone-meta b{font:800 12px/1.25 Manrope,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.motion-phone-meta>span{display:flex;align-items:center;gap:4px;margin-top:5px;color:#26734d;font-size:9px;font-weight:800}
+.showcase-caption{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 8px;color:#c8dacf;font-size:10px}
+.showcase-caption b{color:#e7f2e9;font-size:9px;font-weight:700}
+.showcase-caption b span{color:#d8f36a;font-size:14px;margin-left:4px}
+.hero-showcase-empty{display:flex;align-items:center;justify-content:center;gap:12px;color:#d8e8dc;font-weight:700}
+@keyframes phoneMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes showcasePulse{0%,100%{opacity:.65;transform:translate(-50%,-50%) scale(.92)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+@keyframes orbitDrift{from{rotate:0deg}to{rotate:360deg}}
+@media(max-width:900px){.hero-visual-showcase{height:400px}.motion-phone-card{width:160px;flex-basis:160px}.motion-phone-image{height:185px}}
+@media(max-width:640px){.hero-visual-showcase{height:350px;margin-top:4px}.showcase-heading{margin:0 0 12px}.motion-phone-card{width:145px;flex-basis:145px;border-radius:15px}.motion-phone-image{height:155px}.motion-phone-meta{padding:10px}.showcase-caption{font-size:9px}.showcase-caption b{font-size:8px}.phone-marquee-track{gap:12px;animation-duration:30s}}
+@media(prefers-reduced-motion:reduce){.phone-marquee-track,.showcase-glow,.showcase-orbit-a,.showcase-orbit-b{animation:none!important}.phone-marquee{overflow-x:auto;mask-image:none}.motion-phone-card{transition:none}}
