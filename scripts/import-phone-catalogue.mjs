@@ -95,28 +95,46 @@ async function main() {
   const brandResponse = await fetch(`${supabaseUrl}/rest/v1/brands?select=id,slug`, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } });
   if (!brandResponse.ok) throw new Error('Unable to read brand IDs: ' + await brandResponse.text());
   const brandMap = new Map((await brandResponse.json()).map(x => [x.slug, x.id]));
+  const grouped = new Map();
+  for (const item of records) {
+    const d = item.data;
+    const brandSlug = slugify(d.brand || item.file.brand);
+    const baseModel = d.base_model_slug || d.slug || item.file.path.split('/').pop().replace(/\\.json$/, '');
+    const key = brandSlug + ':' + slugify(baseModel);
+    const group = grouped.get(key) || { brandSlug, baseModel, entries: [] };
+    group.entries.push(item);
+    grouped.set(key, group);
+  }
   const phoneRows = [];
   const variantRows = [];
-  for (const { file, data: d } of records) {
-    const brandSlug = slugify(d.brand || file.brand);
-    const brandId = brandMap.get(brandSlug);
-    if (!brandId || !d.name) continue;
-    const baseSlug = `techapi-${slugify(d.slug || file.path.split('/').pop().replace(/\\.json$/, ''))}`;
-    const cameras = Array.isArray(d.cameras) ? d.cameras.map(c => `${c.type}: ${c.mp || '?'}MP`).join(', ') : null;
-    const storage = Array.isArray(d.storage_options_gb) ? d.storage_options_gb : [];
-    const spec = { source: 'TechAPI', source_license: 'CC-BY-SA-4.0', source_url: (d.source_urls || [])[0] || null, source_urls: d.source_urls || [], verified: Boolean(d.verified), release_date: d.release_date || null, chipset: d.soc || null, display: d.display || null, cameras: d.cameras || [], charging_wired_w: d.charging_wired_w || null, charging_wireless_w: d.charging_wireless_w || null, weight_g: d.weight_g || null, dimensions: d.dimensions || null, ip_rating: d.ip_rating || null, connectivity: d.connectivity || null, os_version: d.os_version || null };
-    phoneRows.push({ brand_id: brandId, name: d.name, model: d.base_model_slug || d.slug || d.name, slug: baseSlug, description: `Global device catalogue entry. Specifications credited to TechAPI (CC-BY-SA 4.0). Verify regional configuration before listing.`, image_url: d.image_url || null, images: d.image_url ? [d.image_url] : [], ram_gb: Number.isFinite(d.ram_gb) ? d.ram_gb : null, storage_gb: storage.length === 1 ? storage[0] : null, screen_inches: d.display?.size_inch || null, battery_mah: d.battery_mah || null, camera_summary: cameras, network: [], operating_system: d.os || null, condition_type: 'new', specifications: spec, is_published: true, category: 'smartphone' });
-    for (const capacity of storage.length ? storage : [null]) {
-      const ram = Number.isFinite(d.ram_gb) ? d.ram_gb : null;
-      const variantName = [ram ? `${ram}GB RAM` : null, capacity ? `${capacity}GB storage` : null].filter(Boolean).join(' / ') || 'Base configuration';
-      variantRows.push({ phone_id: null, _phone_slug: baseSlug, variant_name: variantName, ram_gb: ram, storage_gb: capacity, model_number: d.model_number || null, region: d.region || null, image_url: d.image_url || null, source_url: (d.source_urls || [])[0] || null, source_name: 'TechAPI', verified_at: d.verified ? new Date().toISOString() : null, is_active: true });
+  for (const group of grouped.values()) {
+    const ordered = group.entries.slice().sort((a,b) => Number(Boolean(b.data.verified)) - Number(Boolean(a.data.verified)) || (Object.keys(b.data).length - Object.keys(a.data).length));
+    const primary = ordered[0].data;
+    const brandId = brandMap.get(group.brandSlug);
+    if (!brandId || !primary.name) continue;
+    const baseSlug = `techapi-${group.brandSlug}-${slugify(group.baseModel)}`;
+    const cameras = Array.isArray(primary.cameras) ? primary.cameras.map(c => `${c.type}: ${c.mp || '?'}MP`).join(', ') : null;
+    const spec = { source: 'TechAPI', source_license: 'CC-BY-SA-4.0', source_url: (primary.source_urls || [])[0] || null, source_urls: [...new Set(group.entries.flatMap(x => x.data.source_urls || []))], verified: group.entries.some(x => Boolean(x.data.verified)), release_date: primary.release_date || null, chipset: primary.soc || null, display: primary.display || null, cameras: primary.cameras || [], charging_wired_w: primary.charging_wired_w || null, charging_wireless_w: primary.charging_wireless_w || null, weight_g: primary.weight_g || null, dimensions: primary.dimensions || null, ip_rating: primary.ip_rating || null, connectivity: primary.connectivity || null, os_version: primary.os_version || null };
+    phoneRows.push({ brand_id: brandId, name: primary.name, model: group.baseModel, slug: baseSlug, description: `Global device catalogue entry. Specifications credited to TechAPI (CC-BY-SA 4.0). Verify regional configuration before listing.`, image_url: primary.image_url || null, images: primary.image_url ? [primary.image_url] : [], ram_gb: Number.isFinite(primary.ram_gb) ? primary.ram_gb : null, storage_gb: null, screen_inches: primary.display?.size_inch || null, battery_mah: primary.battery_mah || null, camera_summary: cameras, network: [], operating_system: primary.os || null, condition_type: 'new', specifications: spec, is_published: true, category: 'smartphone' });
+    for (const entry of group.entries) {
+      const d = entry.data;
+      const storage = Array.isArray(d.storage_options_gb) ? d.storage_options_gb : [];
+      for (const capacity of storage.length ? storage : [null]) {
+        const ram = Number.isFinite(d.ram_gb) ? d.ram_gb : null;
+        const variantName = [ram ? `${ram}GB RAM` : null, capacity ? `${capacity}GB storage` : null, d.model_number || null].filter(Boolean).join(' / ') || 'Base configuration';
+        variantRows.push({ phone_id: null, _phone_slug: baseSlug, variant_name: variantName, ram_gb: ram, storage_gb: capacity, model_number: d.model_number || null, region: d.region || null, image_url: d.image_url || null, source_url: (d.source_urls || [])[0] || null, source_name: 'TechAPI', verified_at: d.verified ? new Date().toISOString() : null, is_active: true });
+      }
     }
   }
   console.log(`Upserting ${phoneRows.length} phone models...`);
   for (const batch of chunks(phoneRows, BATCH)) await rest('phones?on_conflict=slug', 'POST', batch);
-  const phoneResponse = await fetch(`${supabaseUrl}/rest/v1/phones?select=id,slug&slug=in.(${phoneRows.map(x => encodeURIComponent(x.slug)).join(',')})`, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } });
-  if (!phoneResponse.ok) throw new Error('Unable to map imported phone IDs: ' + await phoneResponse.text());
-  const phoneMap = new Map((await phoneResponse.json()).map(x => [x.slug, x.id]));
+  const phoneMap = new Map();
+  for (const slugBatch of chunks(phoneRows.map(x => x.slug), 100)) {
+    const filter = slugBatch.map(x => encodeURIComponent(x)).join(',');
+    const response = await fetch(`${supabaseUrl}/rest/v1/phones?select=id,slug&slug=in.(${filter})`, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } });
+    if (!response.ok) throw new Error('Unable to map imported phone IDs: ' + await response.text());
+    for (const row of await response.json()) phoneMap.set(row.slug, row.id);
+  }
   const readyVariants = variantRows.map(({ _phone_slug, ...v }) => ({ ...v, phone_id: phoneMap.get(_phone_slug) })).filter(v => v.phone_id);
   console.log(`Upserting ${readyVariants.length} configuration variants...`);
   for (const batch of chunks(readyVariants, BATCH)) await rest('phone_variants?on_conflict=phone_id,variant_name', 'POST', batch);
