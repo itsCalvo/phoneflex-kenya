@@ -1,0 +1,1 @@
+ALTER TABLE public.phones ADD COLUMN IF NOT EXISTS archived_at timestamptz;\nCREATE INDEX IF NOT EXISTS phones_archived_at_idx ON public.phones (archived_at);\n
