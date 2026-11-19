@@ -33,7 +33,7 @@ export async function getProducts():Promise<ProductWithListings[]>{
    const financeListings=variantListings.filter((l:any)=>l.financing_enabled);
    const visibleOffers=offers.filter((o:any)=>{if(o.listing_id)return financeListings.some((l:any)=>l.id===o.listing_id);if(o.phone_id)return o.phone_id===row.id&&financeListings.length>0;return financeListings.length>0;});
    const suffix=variant?'-'+String(variant.variant_name).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''):'';
-   products.push({...base,id:variant?.id||row.id,slug:row.slug+suffix,name:variant?row.name+' '+variant.variant_name:row.name,ram_gb:variant?.ram_gb??row.ram_gb,storage_gb:variant?.storage_gb??row.storage_gb,network:variant?.network?.length?variant.network.join(' / '):base.network,listings:variantListings,finance_offers:visibleOffers,variant_id:variant?.id||null,variant_name:variant?.variant_name||null,model_number:variant?.model_number||null,source_url:variant?.source_url||null});
+   products.push({...base,id:variant?.id||row.id,catalogue_phone_id:row.id,slug:row.slug+suffix,name:variant?row.name+' '+variant.variant_name:row.name,image_url:variant?.image_url||base.image_url,images:variant?.image_url?Array.from(new Set([variant.image_url,...base.images])):base.images,ram_gb:variant?.ram_gb??row.ram_gb,storage_gb:variant?.storage_gb??row.storage_gb,network:variant?.network?.length?variant.network.join(' / '):base.network,listings:variantListings,finance_offers:visibleOffers,variant_id:variant?.id||null,variant_name:variant?.variant_name||null,model_number:variant?.model_number||null,source_url:variant?.source_url||null});
   }
  }
  return products;
