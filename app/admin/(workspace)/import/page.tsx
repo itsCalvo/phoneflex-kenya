@@ -25,7 +25,7 @@ export default function ImportPage(){const input=useRef<HTMLInputElement>(null);
   const {error:be}=await supabase.from('brands').upsert(brands,{onConflict:'slug'});if(be)throw be;
   const {data:brandRows,error:brError}=await supabase.from('brands').select('id,slug').in('slug',brands.map(x=>x.slug));if(brError)throw brError;
   const brandMap=new Map((brandRows||[]).map((b:any)=>[b.slug,b.id]));
-  const {data:existingRows,error:existingError}=await supabase.from('phones').select('id,slug,name,model,brand_id,is_published,image_url,images,ram_gb,storage_gb,screen_inches,battery_mah,specifications').in('brand_id',brands.map(x=>brandMap.get(x.slug)).filter(Boolean));
+  const {data:existingRows,error:existingError}=await supabase.from('phones').select('id,slug,name,model,brand_id,is_published,image_url,images,ram_gb,storage_gb,screen_inches,battery_mah,network,condition_type,description,specifications').in('brand_id',brands.map(x=>brandMap.get(x.slug)).filter(Boolean));
   if(existingError)throw existingError;
   const existing=existingRows as ExistingPhone[];
   const byBrandAndName=new Map<string,ExistingPhone>();for(const p of existing){const b=p.brand_id;byBrandAndName.set(b+':'+norm(p.name),p);if(p.model)byBrandAndName.set(b+':'+norm(p.model),p);}
