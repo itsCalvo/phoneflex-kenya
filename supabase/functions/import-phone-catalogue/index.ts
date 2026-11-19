@@ -16,20 +16,45 @@ Deno.serve(async (req) => {
   const { data: userData, error: userError } = await userClient.auth.getUser();
   if (userError || !userData.user) return json({ error: "Your session is invalid. Sign in again." }, 401);
   const admin = createClient(url, service, { auth: { persistSession: false } });
-  const { data: profile } = await admin.from("profiles").select("role").eq("id", userData.user.id).maybeSingle();
-  if (profile?.role !== "admin") return json({ error: "Administrator access required." }, 403);
-  let body: { limit?: number; offset?: number } = {};
+  const { data: serviceProfile, error: profileLookupError } = await admin.from("profiles").select("role").eq("id", userData.user.id).maybeSingle();
+  if (profileLookupError) console.error("Admin profile lookup via service client failed", profileLookupError);
+  let profile = serviceProfile;
+  if (profile?.role !== "admin") {
+    // Fallback to the signed-in user's own profile row; the query is constrained to this authenticated UID.
+    const { data: ownProfile, error: ownProfileError } = await userClient.from("profiles").select("role").eq("id", userData.user.id).maybeSingle();
+    if (ownProfileError) console.error("Admin profile lookup via user client failed", ownProfileError);
+    if (ownProfile?.role === "admin") profile = ownProfile;
+  }
+  if (profile?.role !== "admin") {
+    console.error("Admin authorization denied", { userId: userData.user.id, serviceLookupError: profileLookupError?.message || null });
+    return json({ error: "Administrator access could not be confirmed for this account. Check the profile role and try again." }, 403);
+  }
+  let body: { limit?: number; cursor?: string } = {};
   try { body = await req.json(); } catch { /* defaults */ }
   const limit = Math.max(1, Math.min(25, Math.floor(Number(body.limit) || 25)));
-  const offset = Math.max(0, Math.floor(Number(body.offset) || 0));
+  const cursorParts = String(body.cursor || "0:0").split(":");
+  const brandIndex = Math.max(0, Math.floor(Number(cursorParts[0]) || 0));
+  const fileOffset = Math.max(0, Math.floor(Number(cursorParts[1]) || 0));
   try {
-    const treeRes = await fetch("https://api.github.com/repos/GetTechAPI/TechAPI/git/trees/develop?recursive=1", { headers: { "User-Agent": "PhoneFlex-Kenya-Catalogue-Importer", "Accept": "application/vnd.github+json" } });
-    if (!treeRes.ok) throw new Error("TechAPI catalogue index unavailable (" + treeRes.status + ").");
+    const headers = { "User-Agent": "PhoneFlex-Kenya-Catalogue-Importer", "Accept": "application/vnd.github+json" };
+    const brandsRes = await fetch("https://api.github.com/repos/GetTechAPI/TechAPI/contents/data/smartphone?ref=develop", { headers });
+    if (!brandsRes.ok) throw new Error("TechAPI brand index unavailable (" + brandsRes.status + ").");
+    const brandDirs = (await brandsRes.json()).filter((x: any) => x.type === "dir").sort((a: any,b: any) => a.name.localeCompare(b.name));
+    if (brandIndex >= brandDirs.length) return json({ ok: true, source_records_read: 0, models_upserted: 0, variants_upserted: 0, total_source_records: 0, next_cursor: body.cursor || "0:0", done: true, message: "All brand folders have been scanned." });
+    const currentBrand = brandDirs[brandIndex];
+    const treeRes = await fetch("https://api.github.com/repos/GetTechAPI/TechAPI/git/trees/" + currentBrand.sha + "?recursive=1", { headers });
+    if (!treeRes.ok) throw new Error("TechAPI index for " + currentBrand.name + " unavailable (" + treeRes.status + ").");
     const tree = await treeRes.json();
-    if (tree.truncated) throw new Error("Source index is truncated; refusing an incomplete import.");
-    const files = (tree.tree || []).filter((x: any) => x.type === "blob" && /^data\/smartphone\/[^/]+\/[^/]+\/.+\.json$/i.test(x.path)).sort((a: any,b: any) => a.path.localeCompare(b.path));
-    const selected = files.slice(offset, offset + limit);
-    if (!selected.length) return json({ ok: true, imported: 0, offset, total: files.length, done: true, message: "No more source records at this offset." });
+    if (tree.truncated) throw new Error("The " + currentBrand.name + " source folder is too large for one index. Import paused safely; no records from this batch were written.");
+    const files = (tree.tree || []).filter((x: any) => {
+      const parts = String(x.path || "").split("/");
+      return x.type === "blob" && parts[0] && parts[0].length === 4 && Number.isFinite(Number(parts[0])) && String(x.path).toLowerCase().endsWith(".json");
+    }).map((x: any) => ({ ...x, path: "data/smartphone/" + currentBrand.name + "/" + x.path })).sort((a: any,b: any) => a.path.localeCompare(b.path));
+    const selected = files.slice(fileOffset, fileOffset + limit);
+    if (!selected.length) {
+      const nextCursor = String(brandIndex + 1) + ":0";
+      return json({ ok: true, source_records_read: 0, models_upserted: 0, variants_upserted: 0, total_source_records: files.length, next_cursor: nextCursor, done: brandIndex + 1 >= brandDirs.length, message: "Finished " + currentBrand.name + "; moving to the next brand." });
+    }
     const results = await Promise.all(selected.map(async (f: any) => {
       const r = await fetch("https://raw.githubusercontent.com/GetTechAPI/TechAPI/develop/" + f.path);
       if (!r.ok) return null;
@@ -80,8 +105,10 @@ Deno.serve(async (req) => {
     for(const batch of chunks([...dedup.values()],100)) {
       const {error}=await admin.from("phone_variants").upsert(batch,{onConflict:"phone_id,variant_name"}); if(error) throw error;
     }
-    return json({ok:true,offset,requested:limit,source_records_read:records.length,models_upserted:phones.length,variants_upserted:dedup.size,
-      total_source_records:files.length,next_offset:offset+selected.length,done:offset+selected.length>=files.length,attribution:"TechAPI, CC BY-SA 4.0"});
+    const finishedBrand = fileOffset + selected.length >= files.length;
+    const nextCursor = finishedBrand ? String(brandIndex + 1) + ":0" : String(brandIndex) + ":" + String(fileOffset + selected.length);
+    return json({ok:true,brand:currentBrand.name,source_records_read:records.length,models_upserted:phones.length,variants_upserted:dedup.size,
+      total_source_records:files.length,next_cursor:nextCursor,done:finishedBrand && brandIndex + 1 >= brandDirs.length,attribution:"TechAPI, CC BY-SA 4.0"});
   } catch(e) {
     console.error("Phone catalogue import failed",e);
     return json({error:e instanceof Error?e.message:"Import failed."},500);
