@@ -135,7 +135,7 @@ async function main() {
     if (!response.ok) throw new Error('Unable to map imported phone IDs: ' + await response.text());
     for (const row of await response.json()) phoneMap.set(row.slug, row.id);
   }
-  const readyVariants = variantRows.map(({ _phone_slug, ...v }) => ({ ...v, phone_id: phoneMap.get(_phone_slug) })).filter(v => v.phone_id);
+  const variantMap = new Map();\n  for (const { _phone_slug, ...v } of variantRows) {\n    const phoneId = phoneMap.get(_phone_slug);\n    if (phoneId) variantMap.set(phoneId + ':' + v.variant_name, { ...v, phone_id: phoneId });\n  }\n  const readyVariants = [...variantMap.values()];
   console.log(`Upserting ${readyVariants.length} configuration variants...`);
   for (const batch of chunks(readyVariants, BATCH)) await rest('phone_variants?on_conflict=phone_id,variant_name', 'POST', batch);
   console.log(`DONE: ${phoneRows.length} models; ${readyVariants.length} variants; ${brandNames.length} brands. Images remain external URLs. Source: TechAPI CC-BY-SA 4.0.`);
